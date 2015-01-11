@@ -127,12 +127,12 @@ class Connection(Thread):
         self._start_timers()
 
     def _on_error(self, ws, error):
-        self.logger.info("Connection: Error - %s" % error)
+        self.logger.error("Connection: Error - %s" % error)
         self.state = "failed"
         self.needs_reconnect = True
 
     def _on_message(self, ws, message):
-        self.logger.info("Connection: Message - %s" % message)
+        self.logger.debug("Connection: Message - %s" % message)
 
         # Stop our timeout timer, since we got some data
         self._stop_timers()
@@ -149,7 +149,7 @@ class Connection(Thread):
                         except Exception:
                             self.logger.exception("Callback raised unhandled")
                 else:
-                    self.logger.info("Connection: Unhandled event")
+                    self.logger.warning("Connection: Unhandled event")
             else:
                 # We've got a channel event.  Lets pass it up to the pusher
                 # so it can be handled by the appropriate channel.
@@ -195,14 +195,14 @@ class Connection(Thread):
         if channel_name:
             event['channel'] = channel_name
 
-        self.logger.info("Connection: Sending event - %s" % event)
+        self.logger.debug("Connection: Sending event - %s" % event)
         try:
             self.socket.send(json.dumps(event))
         except Exception as e:
             self.logger.error("Failed send event: %s" % e)
 
     def send_ping(self):
-        self.logger.info("Connection: ping to pusher")
+        self.logger.debug("Connection: ping to pusher")
         try:
             self.socket.send(json.dumps({'event': 'pusher:ping', 'data': ''}))
         except Exception as e:
@@ -211,7 +211,7 @@ class Connection(Thread):
         self.pong_timer.start()
 
     def send_pong(self):
-        self.logger.info("Connection: pong to pusher")
+        self.logger.debug("Connection: pong to pusher")
         try:
             self.socket.send(json.dumps({'event': 'pusher:pong', 'data': ''}))
         except Exception as e:
@@ -241,7 +241,7 @@ class Connection(Thread):
         self._start_timers()
 
     def _pong_handler(self, data):
-        self.logger.info("Connection: pong from pusher")
+        self.logger.debug("Connection: pong from pusher")
         self.pong_received = True
 
     def _pusher_error_handler(self, data):
@@ -258,7 +258,7 @@ class Connection(Thread):
 
                 if (error_code >= 4000) and (error_code <= 4099):
                     # The connection SHOULD NOT be re-established unchanged
-                    self.logger.info("Connection: Error is unrecoverable.  Disconnecting")
+                    self.logger.error("Connection: Error is unrecoverable.  Disconnecting")
                     self.disconnect()
                 elif (error_code >= 4100) and (error_code <= 4199):
                     # The connection SHOULD be re-established after backing off
